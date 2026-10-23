@@ -14,10 +14,12 @@
 <div class="app">
   <aside class="sidebar">
     <div class="brand">Bounty<span class="accent">Command</span></div>
+<button id="theme-toggle" class="theme-toggle" onclick="toggleTheme()" title="Toggle theme"><i class="fa-solid fa-moon"></i></button>
     <nav class="sidenav">
       <button data-view="dashboard" class="nav-item active"><i class="fa-solid fa-gauge"></i> Dashboard</button>
       <button data-view="targets" class="nav-item"><i class="fa-solid fa-crosshairs"></i> Targets</button>
       <button data-view="findings" class="nav-item"><i class="fa-solid fa-bug"></i> Findings</button>
+      <button data-view="kanban" class="nav-item"><i class="fa-solid fa-columns"></i> Kanban</button>
       <button data-view="payloads" class="nav-item"><i class="fa-solid fa-code"></i> Payload Lab</button>
       <button data-view="cvss" class="nav-item"><i class="fa-solid fa-calculator"></i> CVSS Calc</button>
       <button data-view="report" class="nav-item"><i class="fa-solid fa-file-lines"></i> Report Gen</button>
@@ -39,6 +41,10 @@
         <div class="stat-card"><div class="stat-label">Low</div><div class="stat-value low" id="stat-low">0</div></div>
       </div>
       <div class="panel">
+        <h2>Severity Distribution</h2>
+        <div id="chart" class="chart"></div>
+      </div>
+      <div class="panel">
         <h2>Recent Findings</h2>
         <div id="recent-findings" class="list"></div>
       </div>
@@ -48,6 +54,8 @@
           <button class="btn" onclick="switchView('targets')">+ Add Target</button>
           <button class="btn" onclick="switchView('findings')">+ Add Finding</button>
           <button class="btn" onclick="switchView('payloads')">Open Payload Lab</button>
+          <button class="btn" onclick="exportData()">Export JSON</button>
+          <button class="btn" onclick="importData()">Import JSON</button>
           <button class="btn btn-danger" onclick="clearAll()">Wipe Data</button>
         </div>
       </div>
@@ -69,8 +77,19 @@
       </div>
     </section>
 
+    <!-- Kanban -->
+    <section id="view-kanban" class="view">
+      <h1>Kanban Board</h1>
+      <div class="kanban">
+        <div class="kanban-col" data-status="New"><h3>New</h3><div class="kanban-list" id="kb-New"></div></div>
+        <div class="kanban-col" data-status="Triaged"><h3>Triaged</h3><div class="kanban-list" id="kb-Triaged"></div></div>
+        <div class="kanban-col" data-status="Reported"><h3>Reported</h3><div class="kanban-list" id="kb-Reported"></div></div>
+        <div class="kanban-col" data-status="Accepted"><h3>Accepted</h3><div class="kanban-list" id="kb-Accepted"></div></div>
+        <div class="kanban-col" data-status="Duplicate"><h3>Duplicate</h3><div class="kanban-list" id="kb-Duplicate"></div></div>
+      </div>
+    </section>
+
     <!-- Findings -->
-    <section id="view-findings" class="view">
       <h1>Findings</h1>
       <div class="panel">
         <div class="form-grid">
@@ -79,6 +98,7 @@
           <input id="f-target" placeholder="Target">
           <input id="f-endpoint" placeholder="Endpoint">
           <input id="f-cvss" placeholder="CVSS score (optional)">
+          <select id="f-status"><option>New</option><option>Triaged</option><option>Reported</option><option>Accepted</option><option>Duplicate</option></select>
           <button class="btn btn-primary" onclick="addFinding()">Add Finding</button>
         </div>
         <textarea id="f-desc" placeholder="Description / impact..."></textarea>

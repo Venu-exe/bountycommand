@@ -57,4 +57,24 @@ input:focus,select:focus,textarea:focus{outline:none;border-color:var(--accent);
 .notes{width:100%;min-height:300px;font-family:'JetBrains Mono',monospace;}
 .muted{color:var(--muted);font-size:.85rem;margin-left:.75rem;}
 .quick-actions{display:flex;gap:.75rem;flex-wrap:wrap;}
-@media(max-width:900px){.app{grid-template-columns:1fr;}.sidebar{height:auto;position:static;flex-direction:row;flex-wrap:wrap;}.sidenav{flex-direction:row;flex-wrap:wrap;}.main{padding:1.25rem;} .form-row,.form-grid{grid-template-columns:1fr;} .cvss-grid{grid-template-columns:repeat(2,1fr);}}
+/* Kanban */
+.kanban{display:grid;grid-template-columns:repeat(5,1fr);gap:1rem;}
+.kanban-col{background:var(--bg2);border:1px solid var(--border);border-radius:var(--radius);padding:.75rem;min-height:200px;}
+.kanban-col h3{font-size:.9rem;margin-bottom:.75rem;color:var(--accent);}
+.kb-card{background:var(--card);border:1px solid var(--border);border-radius:8px;padding:.75rem;margin-bottom:.6rem;}
+.kb-card .title{font-weight:600;font-size:.9rem;}
+.kb-card .meta{color:var(--muted);font-size:.75rem;margin-top:.3rem;}
+/* Chart */
+.chart{display:flex;flex-direction:column;gap:.5rem;}
+.bar-row{display:grid;grid-template-columns:80px 1fr 30px;align-items:center;gap:.6rem;}
+.bar-label{font-size:.8rem;color:var(--muted);}
+.bar-track{background:var(--bg);border-radius:4px;height:18px;overflow:hidden;}
+.bar-fill{height:100%;border-radius:4px;transition:width .3s;}
+.bar-val{font-size:.8rem;text-align:right;}
+/* Theme toggle */
+.theme-toggle{background:transparent;border:1px solid var(--border);color:var(--text);width:36px;height:36px;border-radius:8px;cursor:pointer;margin-top:auto;}
+.theme-toggle:hover{border-color:var(--accent);}
+/* Light theme */
+body.light{--bg:#f6f8fa;--bg2:#ffffff;--card:#ffffff;--border:#d0d7de;--text:#1f2328;--muted:#57606a;--accent:#1a7f37;--accent2:#0969da;}
+body.light .nav-item.active{color:var(--accent);}
+@media(max-width:900px){.app{grid-template-columns:1fr;}.sidebar{height:auto;position:static;flex-direction:row;flex-wrap:wrap;}.sidenav{flex-direction:row;flex-wrap:wrap;}.main{padding:1.25rem;} .form-row,.form-grid{grid-template-columns:1fr;} .cvss-grid{grid-template-columns:repeat(2,1fr);} .kanban{grid-template-columns:1fr;}}

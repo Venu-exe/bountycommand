@@ -5,6 +5,19 @@ const $$ = s => document.querySelectorAll(s);
 let targets = JSON.parse(localStorage.getItem('targets')||'[]');
 let findings = JSON.parse(localStorage.getItem('findings')||'[]');
 let notes = localStorage.getItem('notes')||'';
+let theme = localStorage.getItem('theme')||'dark';
+document.body.classList.toggle('light', theme==='light');
+
+function toggleTheme(){
+  theme = theme==='dark'?'light':'dark';
+  document.body.classList.toggle('light', theme==='light');
+  localStorage.setItem('theme',theme);
+  const i=document.querySelector('#theme-toggle i');
+  i.className = theme==='dark'?'fa-solid fa-moon':'fa-solid fa-sun';
+}
+window.toggleTheme=toggleTheme;
+const ti=document.querySelector('#theme-toggle i');
+if(ti) ti.className = theme==='dark'?'fa-solid fa-moon':'fa-solid fa-sun';
 
 // nav
 function switchView(v){
@@ -38,7 +51,7 @@ window.addTarget=addTarget; window.deleteTarget=deleteTarget;
 function addFinding(){
   const title=$('#f-title').value.trim();
   if(!title) return;
-  findings.push({id:Date.now(),title,sev:$('#f-sev').value,target:$('#f-target').value,endpoint:$('#f-endpoint').value,cvss:$('#f-cvss').value,desc:$('#f-desc').value});
+  findings.push({id:Date.now(),title,sev:$('#f-sev').value,target:$('#f-target').value,endpoint:$('#f-endpoint').value,cvss:$('#f-cvss').value,desc:$('#f-desc').value,status:$('#f-status').value});
   save(); renderFindings(); updateStats();
   $('#f-title').value=''; $('#f-target').value=''; $('#f-endpoint').value=''; $('#f-cvss').value=''; $('#f-desc').value='';
 }
@@ -49,12 +62,13 @@ function renderFindings(){
   $('#findings-list').innerHTML = list.map(f=>`
     <div class="list-item">
       <div>
-        <div class="title">${esc(f.title)} <span class="badge ${f.sev}">${f.sev}</span></div>
+        <div class="title">${esc(f.title)} <span class="badge ${f.sev}">${f.sev}</span> <span class="badge">${f.status||'New'}</span></div>
         <div class="meta">${esc(f.target)} ${f.endpoint?'· '+esc(f.endpoint):''} ${f.cvss?'· CVSS '+esc(f.cvss):''}</div>
         ${f.desc?`<div class="meta" style="margin-top:.4rem;white-space:pre-wrap">${esc(f.desc)}</div>`:''}
       </div>
       <div class="actions"><button onclick="deleteFinding(${f.id})">del</button></div>
     </div>`).join('') || '<div class="muted">No findings.</div>';
+  renderKanban(); renderChart();
   // recent on dashboard
   $('#recent-findings').innerHTML = findings.slice(-5).reverse().map(f=>`
     <div class="list-item"><div><div class="title">${esc(f.title)} <span class="badge ${f.sev}">${f.sev}</span></div><div class="meta">${esc(f.target)}</div></div></div>`).join('') || '<div class="muted">No findings yet.</div>';
@@ -131,6 +145,63 @@ $('#notes').value=notes;
 function saveNotes(){ localStorage.setItem('notes',$('#notes').value); $('#notes-status').textContent='saved'; setTimeout(()=>$('#notes-status').textContent='',1500); }
 window.saveNotes=saveNotes;
 
+// kanban
+function renderKanban(){
+  ['New','Triaged','Reported','Accepted','Duplicate'].forEach(s=>{
+    const el=$('#kb-'+s);
+    if(!el) return;
+    const items=findings.filter(f=>(f.status||'New')===s);
+    el.innerHTML = items.map(f=>`
+      <div class="kb-card">
+        <div class="title">${esc(f.title)}</div>
+        <div class="meta"><span class="badge ${f.sev}">${f.sev}</span> ${esc(f.target)}</div>
+        <select onchange="setStatus(${f.id},this.value)" style="margin-top:.4rem;font-size:.75rem">
+          ${['New','Triaged','Reported','Accepted','Duplicate'].map(x=>`<option ${x===(f.status||'New')?'selected':''}>${x}</option>`).join('')}
+        </select>
+      </div>`).join('') || '';
+  });
+}
+function setStatus(id,v){ const f=findings.find(x=>x.id===id); if(f){f.status=v;save();renderFindings();} }
+window.setStatus=setStatus;
+
+// chart
+function renderChart(){
+  const counts={Critical:0,High:0,Medium:0,Low:0,Info:0};
+  findings.forEach(f=>{ if(counts[f.sev]!==undefined) counts[f.sev]++; });
+  const max=Math.max(1,...Object.values(counts));
+  const colors={Critical:'var(--danger)',High:'var(--warn)',Medium:'var(--accent2)',Low:'var(--muted)',Info:'var(--muted)'};
+  $('#chart').innerHTML = Object.entries(counts).map(([k,v])=>`
+    <div class="bar-row"><span class="bar-label">${k}</span><div class="bar-track"><div class="bar-fill" style="width:${v/max*100}%;background:${colors[k]}"></div></div><span class="bar-val">${v}</span></div>`).join('');
+}
+
+// export/import
+function exportData(){
+  const blob=new Blob([JSON.stringify({targets,findings,notes},null,2)],{type:'application/json'});
+  const a=document.createElement('a'); a.href=URL.createObjectURL(blob); a.download='bountycommand-backup.json'; a.click();
+}
+function importData(){
+  const inp=document.createElement('input'); inp.type='file'; inp.accept='application/json';
+  inp.onchange=e=>{
+    const r=new FileReader(); r.onload=ev=>{
+      try{
+        const d=JSON.parse(ev.target.result);
+        if(d.targets) targets=d.targets;
+        if(d.findings) findings=d.findings;
+        if(d.notes) { notes=d.notes; $('#notes').value=notes; }
+        save(); renderTargets(); renderFindings(); updateStats(); alert('Imported.');
+      }catch(err){ alert('Invalid file'); }
+    }; r.readAsText(e.target.files[0]);
+  }; inp.click();
+}
+window.exportData=exportData; window.importData=importData;
+
+// keyboard shortcuts
+document.addEventListener('keydown',e=>{
+  if(e.target.tagName==='INPUT'||e.target.tagName==='TEXTAREA'||e.target.tagName==='SELECT') return;
+  const map={'1':'dashboard','2':'targets','3':'findings','4':'kanban','5':'payloads','6':'cvss','7':'report','8':'notes'};
+  if(map[e.key]) switchView(map[e.key]);
+});
+
 // helpers
 function esc(s){ return String(s).replace(/[&<>"']/g,c=>({'&':'&amp;','<':'&lt;','>':'&gt;','"':'&quot;',"'":'&#39;'}[c])); }
 function save(){ localStorage.setItem('targets',JSON.stringify(targets)); localStorage.setItem('findings',JSON.stringify(findings)); }
@@ -148,5 +219,5 @@ function clearAll(){ if(!confirm('Wipe all data?'))return; targets=[];findings=[
 window.clearAll=clearAll;
 
 // init
-renderTargets(); renderFindings(); updateStats();
+renderTargets(); renderFindings(); renderKanban(); renderChart(); updateStats();
 switchView('dashboard');
