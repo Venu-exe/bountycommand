@@ -1,0 +1,180 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>BountyCommand — Bug Bounty Command Center</title>
+<meta name="description" content="All-in-one bug bounty command center: targets, findings, payloads, CVSS calculator, report generator. Offline, localStorage.">
+<link rel="preconnect" href="https://fonts.googleapis.com">
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@400;500;600;700&family=JetBrains+Mono:wght@400;500&display=swap" rel="stylesheet">
+<link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+<link rel="stylesheet" href="style.css">
+</head>
+<body>
+<div class="app">
+  <aside class="sidebar">
+    <div class="brand">Bounty<span class="accent">Command</span></div>
+    <nav class="sidenav">
+      <button data-view="dashboard" class="nav-item active"><i class="fa-solid fa-gauge"></i> Dashboard</button>
+      <button data-view="targets" class="nav-item"><i class="fa-solid fa-crosshairs"></i> Targets</button>
+      <button data-view="findings" class="nav-item"><i class="fa-solid fa-bug"></i> Findings</button>
+      <button data-view="payloads" class="nav-item"><i class="fa-solid fa-code"></i> Payload Lab</button>
+      <button data-view="cvss" class="nav-item"><i class="fa-solid fa-calculator"></i> CVSS Calc</button>
+      <button data-view="report" class="nav-item"><i class="fa-solid fa-file-lines"></i> Report Gen</button>
+      <button data-view="notes" class="nav-item"><i class="fa-solid fa-note-sticky"></i> Notes</button>
+    </nav>
+    <div class="sidebar-foot">v1.0 · offline · localStorage</div>
+  </aside>
+
+  <main class="main">
+    <!-- Dashboard -->
+    <section id="view-dashboard" class="view active">
+      <h1>Dashboard</h1>
+      <div class="stats-grid">
+        <div class="stat-card"><div class="stat-label">Targets</div><div class="stat-value" id="stat-targets">0</div></div>
+        <div class="stat-card"><div class="stat-label">Findings</div><div class="stat-value" id="stat-findings">0</div></div>
+        <div class="stat-card"><div class="stat-label">Critical</div><div class="stat-value crit" id="stat-crit">0</div></div>
+        <div class="stat-card"><div class="stat-label">High</div><div class="stat-value high" id="stat-high">0</div></div>
+        <div class="stat-card"><div class="stat-label">Medium</div><div class="stat-value med" id="stat-med">0</div></div>
+        <div class="stat-card"><div class="stat-label">Low</div><div class="stat-value low" id="stat-low">0</div></div>
+      </div>
+      <div class="panel">
+        <h2>Recent Findings</h2>
+        <div id="recent-findings" class="list"></div>
+      </div>
+      <div class="panel">
+        <h2>Quick Actions</h2>
+        <div class="quick-actions">
+          <button class="btn" onclick="switchView('targets')">+ Add Target</button>
+          <button class="btn" onclick="switchView('findings')">+ Add Finding</button>
+          <button class="btn" onclick="switchView('payloads')">Open Payload Lab</button>
+          <button class="btn btn-danger" onclick="clearAll()">Wipe Data</button>
+        </div>
+      </div>
+    </section>
+
+    <!-- Targets -->
+    <section id="view-targets" class="view">
+      <h1>Targets</h1>
+      <div class="panel">
+        <div class="form-row">
+          <input id="t-name" placeholder="Program name (e.g. Acme Corp)">
+          <input id="t-url" placeholder="Scope URL / domain">
+          <select id="t-status"><option>In scope</option><option>Testing</option><option>Reported</option><option>Closed</option></select>
+          <button class="btn btn-primary" onclick="addTarget()">Add</button>
+        </div>
+      </div>
+      <div class="panel">
+        <div id="targets-list" class="list"></div>
+      </div>
+    </section>
+
+    <!-- Findings -->
+    <section id="view-findings" class="view">
+      <h1>Findings</h1>
+      <div class="panel">
+        <div class="form-grid">
+          <input id="f-title" placeholder="Title">
+          <select id="f-sev"><option>Critical</option><option>High</option><option>Medium</option><option>Low</option><option>Info</option></select>
+          <input id="f-target" placeholder="Target">
+          <input id="f-endpoint" placeholder="Endpoint">
+          <input id="f-cvss" placeholder="CVSS score (optional)">
+          <button class="btn btn-primary" onclick="addFinding()">Add Finding</button>
+        </div>
+        <textarea id="f-desc" placeholder="Description / impact..."></textarea>
+      </div>
+      <div class="panel">
+        <div class="filter-row">
+          <input id="f-search" placeholder="Search findings..." oninput="renderFindings()">
+          <select id="f-filter" onchange="renderFindings()"><option value="">All severities</option><option>Critical</option><option>High</option><option>Medium</option><option>Low</option><option>Info</option></select>
+        </div>
+        <div id="findings-list" class="list"></div>
+      </div>
+    </section>
+
+    <!-- Payload Lab -->
+    <section id="view-payloads" class="view">
+      <h1>Payload Lab</h1>
+      <div class="panel">
+        <div class="form-row">
+          <select id="p-type">
+            <option value="xss">XSS</option>
+            <option value="sqli">SQLi</option>
+            <option value="ssrf">SSRF</option>
+            <option value="lfi">LFI</option>
+            <option value="ssti">SSTI</option>
+            <option value="redirect">Open Redirect</option>
+            <option value="cmdi">Command Injection</option>
+          </select>
+          <select id="p-enc">
+            <option value="raw">raw</option>
+            <option value="url">url</option>
+            <option value="b64">base64</option>
+            <option value="hex">hex</option>
+            <option value="double">double url</option>
+            <option value="unicode">unicode</option>
+          </select>
+          <button class="btn btn-primary" onclick="genPayloads()">Generate</button>
+          <button class="btn" onclick="genWaf()">WAF Bypass</button>
+        </div>
+      </div>
+      <div class="panel">
+        <pre id="payload-out" class="code-block"></pre>
+      </div>
+    </section>
+
+    <!-- CVSS -->
+    <section id="view-cvss" class="view">
+      <h1>CVSS 3.1 Calculator</h1>
+      <div class="panel">
+        <div class="cvss-grid">
+          <label>AV <select id="cv-av"><option value="N">Network</option><option value="A">Adjacent</option><option value="L">Local</option><option value="P">Physical</option></select></label>
+          <label>AC <select id="cv-ac"><option value="L">Low</option><option value="H">High</option></select></label>
+          <label>PR <select id="cv-pr"><option value="N">None</option><option value="L">Low</option><option value="H">High</option></select></label>
+          <label>UI <select id="cv-ui"><option value="N">None</option><option value="R">Required</option></select></label>
+          <label>S <select id="cv-s"><option value="U">Unchanged</option><option value="C">Changed</option></select></label>
+          <label>C <select id="cv-c"><option value="H">High</option><option value="L">Low</option><option value="N">None</option></select></label>
+          <label>I <select id="cv-i"><option value="H">High</option><option value="L">Low</option><option value="N">None</option></select></label>
+          <label>A <select id="cv-a"><option value="H">High</option><option value="L">Low</option><option value="N">None</option></select></label>
+        </div>
+        <button class="btn btn-primary" onclick="calcCvss()">Calculate</button>
+        <div id="cvss-result" class="cvss-result"></div>
+      </div>
+    </section>
+
+    <!-- Report Gen -->
+    <section id="view-report" class="view">
+      <h1>Report Generator</h1>
+      <div class="panel">
+        <div class="form-grid">
+          <input id="r-title" placeholder="Title">
+          <select id="r-platform"><option>hackerone</option><option>bugcrowd</option><option>intigriti</option><option>generic</option></select>
+          <input id="r-url" placeholder="Target URL">
+          <input id="r-sev" placeholder="Severity (e.g. High)">
+        </div>
+        <textarea id="r-steps" placeholder="Steps to reproduce..."></textarea>
+        <textarea id="r-impact" placeholder="Impact..."></textarea>
+        <textarea id="r-poc" placeholder="PoC (curl / request)..."></textarea>
+        <button class="btn btn-primary" onclick="genReport()">Generate Markdown</button>
+      </div>
+      <div class="panel">
+        <pre id="report-out" class="code-block"></pre>
+        <button class="btn" onclick="copyReport()">Copy</button>
+      </div>
+    </section>
+
+    <!-- Notes -->
+    <section id="view-notes" class="view">
+      <h1>Notes / Scratchpad</h1>
+      <div class="panel">
+        <textarea id="notes" class="notes" placeholder="Your notes..."></textarea>
+        <button class="btn btn-primary" onclick="saveNotes()">Save</button>
+        <span id="notes-status" class="muted"></span>
+      </div>
+    </section>
+  </main>
+</div>
+<script src="app.js"></script>
+</body>
+</html>
+"""
